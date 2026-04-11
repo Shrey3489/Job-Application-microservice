@@ -9,6 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="Jobservice" />
         <module name="Eureka" />
+        <module name="configserver" />
       </profile>
       <profile name="Annotation profile for ReviewService" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -28,6 +29,7 @@
       <module name="Eureka" options="-parameters" />
       <module name="Jobservice" options="-parameters" />
       <module name="ReviewService" options="-parameters" />
+      <module name="configserver" options="-parameters" />
     </option>
   </component>
 </project>
