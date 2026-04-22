@@ -4,12 +4,8 @@ import com.jobApplication.Jobservice.Entity.Job;
 import com.jobApplication.Jobservice.ExternalDto.CompanyDto;
 import com.jobApplication.Jobservice.ExternalDto.JobWithCompanyDto;
 import com.jobApplication.Jobservice.ExternalDto.ReviewDto;
-import com.jobApplication.Jobservice.InterserviceCommunication.CompanyServiceClient;
-import com.jobApplication.Jobservice.InterserviceCommunication.ReviewServiceClient;
 import com.jobApplication.Jobservice.Repository.JobRepository;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,17 +13,15 @@ import java.util.stream.Collectors;
 @Service
 public class JobServiceImpl implements JobService {
 
-    private JobRepository moJobRepository;
+    private final JobRepository moJobRepository;
 
-    private CompanyServiceClient companyServiceClient;
+    private final ExternalService externalService;
 
-    private ReviewServiceClient reviewServiceClient;
-
-    public JobServiceImpl(JobRepository jobRepository,@Qualifier("getCompanySericeClinet") CompanyServiceClient companyServiceClient,@Qualifier("getReviewSericeClinet") ReviewServiceClient reviewServiceClient)
+    public JobServiceImpl(JobRepository jobRepository,
+                          ExternalService externalService)
     {
         this.moJobRepository = jobRepository;
-        this.companyServiceClient = companyServiceClient;
-        this.reviewServiceClient = reviewServiceClient;
+        this.externalService = externalService;
     }
 
 
@@ -52,7 +46,7 @@ public class JobServiceImpl implements JobService {
         loJobWithCompanyDto.setMaxSalary(foJob.getMaxSalary());
         loJobWithCompanyDto.setMinSalary(foJob.getMinSalary());
         loJobWithCompanyDto.setCompanyDto(loCompanyDto);
-        ReviewDto loReviewDto = reviewServiceClient.getReviewDetails(loCompanyDto.getId());
+        ReviewDto loReviewDto = getReviewDto(loCompanyDto.getId());
         loJobWithCompanyDto.getCompanyDto().setReviewDto(loReviewDto);
         return loJobWithCompanyDto;
     }
@@ -110,14 +104,12 @@ public class JobServiceImpl implements JobService {
 
     public CompanyDto isCompanyPresent(Long id)
     {
-        try
-        {
-        return  companyServiceClient.getCompanyDetail(id).orElse(null);
-        }
-        catch (HttpClientErrorException.NotFound ex) {
-        return null; // company not found
-    }
+            return externalService.getCompany(id);
     }
 
+    public ReviewDto getReviewDto(Long id)
+    {
+        return externalService.getReview(id);
+    }
 
 }
