@@ -1,7 +1,9 @@
 package com.jobApplication.CompanyService.Service;
 
+import com.jobApplication.CompanyService.AsyncServiceInteract.CompanyRateingDto;
 import com.jobApplication.CompanyService.Repository.CompanyRepository;
 import com.jobApplication.CompanyService.Entity.Company;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -56,5 +58,16 @@ public class CompanyServiceImpl implements CompanyService
             return "Deleted Company";
         }
         return "Company not found";
+    }
+
+    @RabbitListener(queues = "reviewRating.Queue")
+    public void getCompanyReview(CompanyRateingDto companyRateingDto)
+    {
+        Company loCompany = moCompanyRepository.findById(companyRateingDto.getCompanyId()).orElse(null);
+        if(loCompany!=null)
+        {
+            loCompany.setRating(companyRateingDto.getRateing());
+            moCompanyRepository.save(loCompany);
+        }
     }
 }

@@ -1,9 +1,11 @@
 package com.jobApplication.ReviewService.Services;
 
+import com.jobApplication.ReviewService.AsyncServiceInteract.CompanyRateingDto;
 import com.jobApplication.ReviewService.ClientServieConfig.CompanyClient;
 import com.jobApplication.ReviewService.Entity.Review;
 import com.jobApplication.ReviewService.ExternalDto.CompanyDto;
 import com.jobApplication.ReviewService.Repository.ReviewRepository;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -17,10 +19,13 @@ public class ReviewServiceImpl implements ReviewService {
 
     private CompanyClient companyClient;
 
-    public ReviewServiceImpl(ReviewRepository reviewRepository,CompanyClient companyClient)
+    private RabbitTemplate rabbitTemplate;
+
+    public ReviewServiceImpl(ReviewRepository reviewRepository,CompanyClient companyClient, RabbitTemplate rabbitTemplate)
     {
         this.companyClient = companyClient;
         this.reviewRepository = reviewRepository;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Override
@@ -44,9 +49,23 @@ public class ReviewServiceImpl implements ReviewService {
             }
             review.setCompanyId(companyId);
             reviewRepository.save(review);
+
+            CompanyRateingDto loCompanyRateingDto = new CompanyRateingDto();
+            loCompanyRateingDto.setCompanyId(companyId);
+            loCompanyRateingDto.setRateing(calculateCompanyRating(companyId));
+            rabbitTemplate.convertAndSend("reviewRating.Exchange","reviewRating.RouteKey",loCompanyRateingDto);
             return "Review Added";
         }
         return "Review not added";
+    }
+
+    public Double calculateCompanyRating(long companyId)
+    {
+        List<Review> reviews = reviewRepository.findBycompanyId(companyId);
+        return reviews.stream()
+                .mapToDouble(Review::getRating)
+                .average()
+                .orElse(0.0);
     }
 
     @Override
